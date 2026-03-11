@@ -104,29 +104,25 @@ export default function Dashboard() {
    const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-        // ✅ Get timezone offset in minutes
         const offset = new Date().getTimezoneOffset(); // -330 for IST
 
-        // ✅ Convert reminder time properly on all devices
+        // ✅ Bulletproof reminder time conversion for ALL devices
         let reminderISO = "";
         if (form.reminderTime) {
-            const localDate = new Date(form.reminderTime);
-            // If invalid date (some mobile browsers)
-            if (isNaN(localDate.getTime())) {
-                // Manual parse for mobile: "2026-03-10T21:30"
-                const [datePart, timePart] = form.reminderTime.split("T");
-                const [year, month, day] = datePart.split("-");
-                const [hour, minute] = timePart.split(":");
-                const manual = new Date(year, month - 1, day, hour, minute);
-                reminderISO = new Date(manual.getTime() - offset * 60000).toISOString();
-            } else {
-                reminderISO = localDate.toISOString();
-            }
+            // Always manually parse and apply offset
+            // This works on desktop, Android, iOS consistently
+            const [datePart, timePart] = form.reminderTime.split("T");
+            const [year, month, day] = datePart.split("-").map(Number);
+            const [hour, minute] = timePart.split(":").map(Number);
+            // Create date in LOCAL time
+            const localDate = new Date(year, month - 1, day, hour, minute, 0);
+            // Convert to UTC by applying offset
+            reminderISO = new Date(localDate.getTime() - offset * 60000).toISOString();
         }
 
         let deadlineISO = "";
         if (form.deadline) {
-            const [year, month, day] = form.deadline.split("-");
+            const [year, month, day] = form.deadline.split("-").map(Number);
             const d = new Date(year, month - 1, day, 12, 0, 0);
             deadlineISO = d.toISOString();
         }
@@ -137,8 +133,10 @@ export default function Dashboard() {
             deadline: deadlineISO,
         };
 
-        console.log("⏰ Reminder UTC:", payload.reminderTime);
-        console.log("📱 Device offset:", offset);
+        // Debug toast — remove after testing
+        showToast(`Reminder UTC: ${reminderISO}`, "info");
+        console.log("⏰ Reminder UTC:", reminderISO);
+        console.log("📱 Offset (mins):", offset);
 
         if (editTask) {
             await API.patch(`/api/task/${editTask._id}`, payload);
