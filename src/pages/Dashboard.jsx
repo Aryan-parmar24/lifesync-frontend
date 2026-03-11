@@ -107,10 +107,12 @@ export default function Dashboard() {
             // ✅ Simplest correct approach for all devices
             let reminderISO = "";
             if (form.reminderTime) {
-                // datetime-local gives "2026-03-11T10:00"
-                // Adding ":00" makes it parseable on all browsers
-                const reminderDate = new Date(form.reminderTime + ":00");
-                reminderISO = reminderDate.toISOString();
+                const [datePart, timePart] = form.reminderTime.split("T");
+                const [year, month, day] = datePart.split("-").map(Number);
+                const [hour, minute] = timePart.split(":").map(Number);
+                const offset = new Date().getTimezoneOffset(); // -330 for IST
+                const utcMs = Date.UTC(year, month - 1, day, hour, minute) + (offset * 60000);
+                reminderISO = new Date(utcMs).toISOString();
             }
 
             let deadlineISO = "";
