@@ -172,13 +172,17 @@ export default function Dashboard() {
     const handleEdit = (task) => {
         setEditTask(task);
 
-        // ✅ Correct way to convert UTC to local datetime-local input
         let reminderLocal = "";
         if (task.reminderTime) {
             const date = new Date(task.reminderTime);
-            const offset = date.getTimezoneOffset(); // -330 for IST
+            const offset = date.getTimezoneOffset();
             const localDate = new Date(date.getTime() - offset * 60000);
             reminderLocal = localDate.toISOString().slice(0, 16);
+
+            // ✅ Debug
+            console.log("DB reminderTime:", task.reminderTime);
+            console.log("offset:", offset);
+            console.log("showing in form:", reminderLocal);
         }
 
         setForm({
@@ -191,6 +195,7 @@ export default function Dashboard() {
         });
         setShowForm(true);
     };
+
 
     const resetForm = () => {
         setForm({ title: "", category: "work", priority: "Medium", deadline: "", estimatedTime: 0, reminderTime: "" });
