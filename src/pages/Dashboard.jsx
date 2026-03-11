@@ -101,52 +101,37 @@ export default function Dashboard() {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            // ✅ Simplest correct approach for all devices
-            let reminderISO = "";
-            if (form.reminderTime) {
-                const [datePart, timePart] = form.reminderTime.split("T");
-                const [year, month, day] = datePart.split("-").map(Number);
-                const [hour, minute] = timePart.split(":").map(Number);
-                const offset = new Date().getTimezoneOffset(); // -330 for IST
-                const utcMs = Date.UTC(year, month - 1, day, hour, minute) + (offset * 60000);
-                reminderISO = new Date(utcMs).toISOString();
-            }
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        const payload = {
+            ...form,
+            reminderTime: form.reminderTime 
+                ? new Date(form.reminderTime).toISOString() 
+                : "",
+            deadline: form.deadline 
+                ? new Date(form.deadline).toISOString() 
+                : "",
+        };
 
-            let deadlineISO = "";
-            if (form.deadline) {
-                const [year, month, day] = form.deadline.split("-").map(Number);
-                const d = new Date(year, month - 1, day, 12, 0, 0);
-                deadlineISO = d.toISOString();
-            }
+        showToast(`Reminder UTC: ${payload.reminderTime}`, "info");
 
-            const payload = {
-                ...form,
-                reminderTime: reminderISO,
-                deadline: deadlineISO,
-            };
-
-            // Debug — remove after confirming it works
-            showToast(`Reminder UTC: ${reminderISO}`, "info");
-
-            if (editTask) {
-                await API.patch(`/api/task/${editTask._id}`, payload);
-                showToast("Task updated! ✏️", "success");
-            } else {
-                await API.post("/api/task/", payload);
-                showToast("Task created! 🎉", "success");
-            }
-            setShowForm(false);
-            setEditTask(null);
-            resetForm();
-            fetchTasks();
-            fetchStats();
-        } catch (err) {
-            showToast(err.response?.data?.msg || "Failed to save task", "error");
+        if (editTask) {
+            await API.patch(`/api/task/${editTask._id}`, payload);
+            showToast("Task updated! ✏️", "success");
+        } else {
+            await API.post("/api/task/", payload);
+            showToast("Task created! 🎉", "success");
         }
-    };
+        setShowForm(false);
+        setEditTask(null);
+        resetForm();
+        fetchTasks();
+        fetchStats();
+    } catch (err) {
+        showToast(err.response?.data?.msg || "Failed to save task", "error");
+    }
+};
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this task?")) return;
@@ -172,31 +157,19 @@ export default function Dashboard() {
     };
 
     const handleEdit = (task) => {
-        setEditTask(task);
-
-        let reminderLocal = "";
-        if (task.reminderTime) {
-            const date = new Date(task.reminderTime);
-            const offset = date.getTimezoneOffset();
-            const localDate = new Date(date.getTime() - offset * 60000);
-            reminderLocal = localDate.toISOString().slice(0, 16);
-
-            // ✅ Debug
-            console.log("DB reminderTime:", task.reminderTime);
-            console.log("offset:", offset);
-            console.log("showing in form:", reminderLocal);
-        }
-
-        setForm({
-            title: task.title,
-            category: task.category,
-            priority: task.priority,
-            deadline: task.deadline?.slice(0, 10),
-            estimatedTime: task.estimatedTime,
-            reminderTime: reminderLocal,
-        });
-        setShowForm(true);
-    };
+    setEditTask(task);
+    setForm({
+        title: task.title,
+        category: task.category,
+        priority: task.priority,
+        deadline: task.deadline?.slice(0, 10),
+        estimatedTime: task.estimatedTime,
+        reminderTime: task.reminderTime
+            ? task.reminderTime.slice(0, 16)
+            : "",
+    });
+    setShowForm(true);
+};
 
 
     const resetForm = () => {
