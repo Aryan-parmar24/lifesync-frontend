@@ -101,23 +101,16 @@ export default function Dashboard() {
         }
     };
 
-   const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-        const offset = new Date().getTimezoneOffset(); // -330 for IST
-
-        // ✅ Bulletproof reminder time conversion for ALL devices
+        // ✅ Simplest correct approach for all devices
         let reminderISO = "";
         if (form.reminderTime) {
-            // Always manually parse and apply offset
-            // This works on desktop, Android, iOS consistently
-            const [datePart, timePart] = form.reminderTime.split("T");
-            const [year, month, day] = datePart.split("-").map(Number);
-            const [hour, minute] = timePart.split(":").map(Number);
-            // Create date in LOCAL time
-            const localDate = new Date(year, month - 1, day, hour, minute, 0);
-            // Convert to UTC by applying offset
-            reminderISO = new Date(localDate.getTime() - offset * 60000).toISOString();
+            // datetime-local gives "2026-03-11T10:00"
+            // Adding ":00" makes it parseable on all browsers
+            const reminderDate = new Date(form.reminderTime + ":00");
+            reminderISO = reminderDate.toISOString();
         }
 
         let deadlineISO = "";
@@ -133,10 +126,8 @@ export default function Dashboard() {
             deadline: deadlineISO,
         };
 
-        // Debug toast — remove after testing
+        // Debug — remove after confirming it works
         showToast(`Reminder UTC: ${reminderISO}`, "info");
-        console.log("⏰ Reminder UTC:", reminderISO);
-        console.log("📱 Offset (mins):", offset);
 
         if (editTask) {
             await API.patch(`/api/task/${editTask._id}`, payload);
@@ -178,21 +169,23 @@ export default function Dashboard() {
         }
     };
 
-    const handleEdit = (task) => {
-        setEditTask(task);
-        setForm({
-            title: task.title,
-            category: task.category,
-            priority: task.priority,
-            deadline: task.deadline?.slice(0, 10),
-            estimatedTime: task.estimatedTime,
-            reminderTime: task.reminderTime
-                ? new Date(new Date(task.reminderTime).getTime() - new Date().getTimezoneOffset() * 60000)
-                    .toISOString().slice(0, 16)
-                : "",
-        });
-        setShowForm(true);
-    };
+   const handleEdit = (task) => {
+    setEditTask(task);
+    setForm({
+        title: task.title,
+        category: task.category,
+        priority: task.priority,
+        deadline: task.deadline?.slice(0, 10),
+        estimatedTime: task.estimatedTime,
+        // ✅ Simple fix — just convert UTC to local for display
+        reminderTime: task.reminderTime
+            ? new Date(task.reminderTime).toLocaleString("sv-SE", {
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+              }).slice(0, 16).replace(" ", "T")
+            : "",
+    });
+    setShowForm(true);
+};
 
     const resetForm = () => {
         setForm({ title: "", category: "work", priority: "Medium", deadline: "", estimatedTime: 0, reminderTime: "" });
