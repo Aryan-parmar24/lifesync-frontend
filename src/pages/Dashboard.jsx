@@ -101,30 +101,61 @@ export default function Dashboard() {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const payload = {
-                ...form,
-                reminderTime: form.reminderTime ? new Date(form.reminderTime).toISOString() : "",
-                deadline: form.deadline ? new Date(form.deadline).toISOString() : "",
-            };
-            if (editTask) {
-                await API.patch(`/api/task/${editTask._id}`, payload);
-                showToast("Task updated! ✏️", "success");
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        // ✅ Get timezone offset in minutes
+        const offset = new Date().getTimezoneOffset(); // -330 for IST
+
+        // ✅ Convert reminder time properly on all devices
+        let reminderISO = "";
+        if (form.reminderTime) {
+            const localDate = new Date(form.reminderTime);
+            // If invalid date (some mobile browsers)
+            if (isNaN(localDate.getTime())) {
+                // Manual parse for mobile: "2026-03-10T21:30"
+                const [datePart, timePart] = form.reminderTime.split("T");
+                const [year, month, day] = datePart.split("-");
+                const [hour, minute] = timePart.split(":");
+                const manual = new Date(year, month - 1, day, hour, minute);
+                reminderISO = new Date(manual.getTime() - offset * 60000).toISOString();
             } else {
-                await API.post("/api/task/", payload);
-                showToast("Task created! 🎉", "success");
+                reminderISO = localDate.toISOString();
             }
-            setShowForm(false);
-            setEditTask(null);
-            resetForm();
-            fetchTasks();
-            fetchStats();
-        } catch (err) {
-            showToast(err.response?.data?.msg || "Failed to save task", "error");
         }
-    };
+
+        let deadlineISO = "";
+        if (form.deadline) {
+            const [year, month, day] = form.deadline.split("-");
+            const d = new Date(year, month - 1, day, 12, 0, 0);
+            deadlineISO = d.toISOString();
+        }
+
+        const payload = {
+            ...form,
+            reminderTime: reminderISO,
+            deadline: deadlineISO,
+        };
+
+        console.log("⏰ Reminder UTC:", payload.reminderTime);
+        console.log("📱 Device offset:", offset);
+
+        if (editTask) {
+            await API.patch(`/api/task/${editTask._id}`, payload);
+            showToast("Task updated! ✏️", "success");
+        } else {
+            await API.post("/api/task/", payload);
+            showToast("Task created! 🎉", "success");
+        }
+        setShowForm(false);
+        setEditTask(null);
+        resetForm();
+        fetchTasks();
+        fetchStats();
+    } catch (err) {
+        showToast(err.response?.data?.msg || "Failed to save task", "error");
+    }
+};
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this task?")) return;
