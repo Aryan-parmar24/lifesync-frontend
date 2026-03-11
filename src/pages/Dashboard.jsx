@@ -16,25 +16,25 @@ const useWindowWidth = () => {
 };
 
 const colors = (isDark) => ({
-    pageBg:     isDark ? "#0a0a14" : "#f0f4f8",
-    cardBg:     isDark ? "#13131f" : "#ffffff",
+    pageBg: isDark ? "#0a0a14" : "#f0f4f8",
+    cardBg: isDark ? "#13131f" : "#ffffff",
     cardBorder: isDark ? "#1e1e2e" : "transparent",
-    title:      isDark ? "#f0f0ff" : "#1a202c",
-    subtitle:   isDark ? "#6b7280" : "#718096",
-    input:      isDark ? "#1a1a2e" : "#f8fafc",
-    inputBorder:isDark ? "#2d2d3d" : "#e2e8f0",
+    title: isDark ? "#f0f0ff" : "#1a202c",
+    subtitle: isDark ? "#6b7280" : "#718096",
+    input: isDark ? "#1a1a2e" : "#f8fafc",
+    inputBorder: isDark ? "#2d2d3d" : "#e2e8f0",
     inputColor: isDark ? "#e2e8f0" : "#1a202c",
-    selectBg:   isDark ? "#1a1a2e" : "#ffffff",
-    statCard:   isDark ? "#13131f" : "#ffffff",
-    taskCard:   isDark ? "#13131f" : "#ffffff",
+    selectBg: isDark ? "#1a1a2e" : "#ffffff",
+    statCard: isDark ? "#13131f" : "#ffffff",
+    taskCard: isDark ? "#13131f" : "#ffffff",
     taskBorder: isDark ? "#1e1e2e" : "transparent",
-    metaColor:  isDark ? "#6b7280" : "#718096",
-    pageBtn:    isDark ? "#1a1a2e" : "#ffffff",
+    metaColor: isDark ? "#6b7280" : "#718096",
+    pageBtn: isDark ? "#1a1a2e" : "#ffffff",
     pageBtnBorder: isDark ? "#2d2d3d" : "#e2e8f0",
-    pageBtnColor:  isDark ? "#e2e8f0" : "#4a5568",
-    modalBg:    isDark ? "#13131f" : "#ffffff",
+    pageBtnColor: isDark ? "#e2e8f0" : "#4a5568",
+    modalBg: isDark ? "#13131f" : "#ffffff",
     labelColor: isDark ? "#9ca3af" : "#4a5568",
-    overlayBg:  "rgba(0,0,0,0.7)",
+    overlayBg: "rgba(0,0,0,0.7)",
 });
 
 export default function Dashboard() {
@@ -101,50 +101,50 @@ export default function Dashboard() {
         }
     };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-        // ✅ Simplest correct approach for all devices
-        let reminderISO = "";
-        if (form.reminderTime) {
-            // datetime-local gives "2026-03-11T10:00"
-            // Adding ":00" makes it parseable on all browsers
-            const reminderDate = new Date(form.reminderTime + ":00");
-            reminderISO = reminderDate.toISOString();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            // ✅ Simplest correct approach for all devices
+            let reminderISO = "";
+            if (form.reminderTime) {
+                // datetime-local gives "2026-03-11T10:00"
+                // Adding ":00" makes it parseable on all browsers
+                const reminderDate = new Date(form.reminderTime + ":00");
+                reminderISO = reminderDate.toISOString();
+            }
+
+            let deadlineISO = "";
+            if (form.deadline) {
+                const [year, month, day] = form.deadline.split("-").map(Number);
+                const d = new Date(year, month - 1, day, 12, 0, 0);
+                deadlineISO = d.toISOString();
+            }
+
+            const payload = {
+                ...form,
+                reminderTime: reminderISO,
+                deadline: deadlineISO,
+            };
+
+            // Debug — remove after confirming it works
+            showToast(`Reminder UTC: ${reminderISO}`, "info");
+
+            if (editTask) {
+                await API.patch(`/api/task/${editTask._id}`, payload);
+                showToast("Task updated! ✏️", "success");
+            } else {
+                await API.post("/api/task/", payload);
+                showToast("Task created! 🎉", "success");
+            }
+            setShowForm(false);
+            setEditTask(null);
+            resetForm();
+            fetchTasks();
+            fetchStats();
+        } catch (err) {
+            showToast(err.response?.data?.msg || "Failed to save task", "error");
         }
-
-        let deadlineISO = "";
-        if (form.deadline) {
-            const [year, month, day] = form.deadline.split("-").map(Number);
-            const d = new Date(year, month - 1, day, 12, 0, 0);
-            deadlineISO = d.toISOString();
-        }
-
-        const payload = {
-            ...form,
-            reminderTime: reminderISO,
-            deadline: deadlineISO,
-        };
-
-        // Debug — remove after confirming it works
-        showToast(`Reminder UTC: ${reminderISO}`, "info");
-
-        if (editTask) {
-            await API.patch(`/api/task/${editTask._id}`, payload);
-            showToast("Task updated! ✏️", "success");
-        } else {
-            await API.post("/api/task/", payload);
-            showToast("Task created! 🎉", "success");
-        }
-        setShowForm(false);
-        setEditTask(null);
-        resetForm();
-        fetchTasks();
-        fetchStats();
-    } catch (err) {
-        showToast(err.response?.data?.msg || "Failed to save task", "error");
-    }
-};
+    };
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this task?")) return;
@@ -169,23 +169,28 @@ export default function Dashboard() {
         }
     };
 
-   const handleEdit = (task) => {
-    setEditTask(task);
-    setForm({
-        title: task.title,
-        category: task.category,
-        priority: task.priority,
-        deadline: task.deadline?.slice(0, 10),
-        estimatedTime: task.estimatedTime,
-        // ✅ Simple fix — just convert UTC to local for display
-        reminderTime: task.reminderTime
-            ? new Date(task.reminderTime).toLocaleString("sv-SE", {
-                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-              }).slice(0, 16).replace(" ", "T")
-            : "",
-    });
-    setShowForm(true);
-};
+    const handleEdit = (task) => {
+        setEditTask(task);
+
+        // ✅ Correct way to convert UTC to local datetime-local input
+        let reminderLocal = "";
+        if (task.reminderTime) {
+            const date = new Date(task.reminderTime);
+            const offset = date.getTimezoneOffset(); // -330 for IST
+            const localDate = new Date(date.getTime() - offset * 60000);
+            reminderLocal = localDate.toISOString().slice(0, 16);
+        }
+
+        setForm({
+            title: task.title,
+            category: task.category,
+            priority: task.priority,
+            deadline: task.deadline?.slice(0, 10),
+            estimatedTime: task.estimatedTime,
+            reminderTime: reminderLocal,
+        });
+        setShowForm(true);
+    };
 
     const resetForm = () => {
         setForm({ title: "", category: "work", priority: "Medium", deadline: "", estimatedTime: 0, reminderTime: "" });
