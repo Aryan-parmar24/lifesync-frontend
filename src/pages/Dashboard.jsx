@@ -165,7 +165,10 @@ export default function Dashboard() {
             deadline: task.deadline?.slice(0, 10),
             estimatedTime: task.estimatedTime,
             reminderTime: task.reminderTime
-                ? new Date(task.reminderTime).toISOString().slice(0, 16)
+                ? new Date(task.reminderTime)
+                    .toLocaleString("sv-SE")
+                    .replace(" ", "T")
+                    .slice(0, 16)
                 : ""
         });
         setShowForm(true);
