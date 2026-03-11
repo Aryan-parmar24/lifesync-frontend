@@ -101,37 +101,37 @@ export default function Dashboard() {
         }
     };
 
-   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-        const payload = {
-            ...form,
-            reminderTime: form.reminderTime 
-                ? new Date(form.reminderTime).toISOString() 
-                : "",
-            deadline: form.deadline 
-                ? new Date(form.deadline).toISOString() 
-                : "",
-        };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                ...form,
+                reminderTime: form.reminderTime
+                    ? new Date(form.reminderTime)
+                    : "",
+                deadline: form.deadline
+                    ? new Date(form.deadline)
+                    : "",
+            };
 
-        showToast(`Reminder UTC: ${payload.reminderTime}`, "info");
+            showToast(`Reminder UTC: ${payload.reminderTime}`, "info");
 
-        if (editTask) {
-            await API.patch(`/api/task/${editTask._id}`, payload);
-            showToast("Task updated! ✏️", "success");
-        } else {
-            await API.post("/api/task/", payload);
-            showToast("Task created! 🎉", "success");
+            if (editTask) {
+                await API.patch(`/api/task/${editTask._id}`, payload);
+                showToast("Task updated! ✏️", "success");
+            } else {
+                await API.post("/api/task/", payload);
+                showToast("Task created! 🎉", "success");
+            }
+            setShowForm(false);
+            setEditTask(null);
+            resetForm();
+            fetchTasks();
+            fetchStats();
+        } catch (err) {
+            showToast(err.response?.data?.msg || "Failed to save task", "error");
         }
-        setShowForm(false);
-        setEditTask(null);
-        resetForm();
-        fetchTasks();
-        fetchStats();
-    } catch (err) {
-        showToast(err.response?.data?.msg || "Failed to save task", "error");
-    }
-};
+    };
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this task?")) return;
@@ -157,19 +157,19 @@ export default function Dashboard() {
     };
 
     const handleEdit = (task) => {
-    setEditTask(task);
-    setForm({
-        title: task.title,
-        category: task.category,
-        priority: task.priority,
-        deadline: task.deadline?.slice(0, 10),
-        estimatedTime: task.estimatedTime,
-        reminderTime: task.reminderTime
-            ? task.reminderTime.slice(0, 16)
-            : "",
-    });
-    setShowForm(true);
-};
+        setEditTask(task);
+        setForm({
+            title: task.title,
+            category: task.category,
+            priority: task.priority,
+            deadline: task.deadline?.slice(0, 10),
+            estimatedTime: task.estimatedTime,
+            reminderTime: task.reminderTime
+                ? new Date(task.reminderTime).toISOString().slice(0, 16)
+                : ""
+        });
+        setShowForm(true);
+    };
 
 
     const resetForm = () => {
