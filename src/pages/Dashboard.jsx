@@ -108,10 +108,11 @@ export default function Dashboard() {
                 ...form,
                 reminderTime: form.reminderTime
                     ? new Date(form.reminderTime)
-                    : "",
+                    : null,
+
                 deadline: form.deadline
                     ? new Date(form.deadline)
-                    : "",
+                    : null,
             };
 
             showToast(`Reminder UTC: ${payload.reminderTime}`, "info");
@@ -165,10 +166,7 @@ export default function Dashboard() {
             deadline: task.deadline?.slice(0, 10),
             estimatedTime: task.estimatedTime,
             reminderTime: task.reminderTime
-                ? new Date(task.reminderTime)
-                    .toLocaleString("sv-SE")
-                    .replace(" ", "T")
-                    .slice(0, 16)
+                ? new Date(task.reminderTime).toISOString().slice(0, 16)
                 : ""
         });
         setShowForm(true);
